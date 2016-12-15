@@ -2,7 +2,9 @@
 laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发者快速上手laravel框架而编写的一份手册。
 初期并不会按照一定的顺序去编写这份手册，但是最后一定会慢慢的完善这份手册，从路由到更为复杂些的应用。
 
-
+# composer与laravel安装
+# HTTP相关
+# 视图&amp;模板
 # DB&amp;Eloquent
 # 使用laravel写一个用户模块
 # 广播
@@ -18,3 +20,4 @@ laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发
 #  命令调度
 #  代码测试
 #  laravel的核心理念
+# 开发环境推荐
