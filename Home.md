@@ -6,7 +6,7 @@ laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发
 # HTTP相关
 # 视图&amp;模板
 # DB&amp;Eloquent
-[## 配置数据库](https://github.com/xshaitt/laravel-manual/wiki/%E9%85%8D%E7%BD%AE%E6%95%B0%E6%8D%AE%E5%BA%93)
+[配置数据库](https://github.com/xshaitt/laravel-manual/wiki/%E9%85%8D%E7%BD%AE%E6%95%B0%E6%8D%AE%E5%BA%93)
 ## DB
 ### 运行原生SQL语句
 ### 使用DB门面提供的方法
