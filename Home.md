@@ -6,6 +6,12 @@ laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发
 # HTTP相关
 # 视图&amp;模板
 # DB&amp;Eloquent
+## 配置数据库
+## DB
+### 运行原生SQL语句
+### 使用DB门面提供的方法
+### 事务
+## Eloquent
 # 使用laravel写一个用户模块
 # 广播
 # 缓存
