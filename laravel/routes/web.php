@@ -61,7 +61,7 @@ Route::get('db', function () {
 //            dump($user);
         }
     });
-    $users = DB::table('users')->select('name','email')->get();
+    $users = DB::table('users')->select('name', 'email')->get();
     //分块获取记录,每次获取指定条记录的数据
     $userNum = DB::table('users')->count();
     $maxId = DB::table('users')->max('id');
@@ -71,27 +71,27 @@ Route::get('db', function () {
     dump($users);
 });
 //where
-Route::get('where',function(){
-    $user = DB::table('users')->where('id','=','15')->first();
-    $user = DB::table('users')->where('id','15')->first();
+Route::get('where', function () {
+    $user = DB::table('users')->where('id', '=', '15')->first();
+    $user = DB::table('users')->where('id', '15')->first();
     //以上两个方法是等价的,如果where操作符为=的话,则第二个参数可以省略
-    $users = DB::table('users')->where('name','like','%a%')->get();
+    $users = DB::table('users')->where('name', 'like', '%a%')->get();
     //模糊查询
     $users = DB::table('users')->where([
-        ['name','like','%a%'],
-        ['id','>','15'],
-        ['id','<','25']
+        ['name', 'like', '%a%'],
+        ['id', '>', '15'],
+        ['id', '<', '25']
     ])->get();
     //使用数组的方式传递多个条件给where语句
-    $user = DB::table('users')->where('id','12')->orWhere('id','15')->first();
+    $user = DB::table('users')->where('id', '12')->orWhere('id', '15')->first();
     //多个where条件,where默认使用and拼接多个条件,如果为orWhere则使用or去拼接多个where条件
     $users = DB::table('users')->whereBetween('id', [2, 20])->get();
     //查询在指定区间的记录
     $users = DB::table('users')->whereNotBetween('id', [2, 20])->get();
     //查询不在指定区间的记录
-    $users = DB::table('users')->whereIn('id', [1,2,3,4,5])->get();
+    $users = DB::table('users')->whereIn('id', [1, 2, 3, 4, 5])->get();
     //查询在指定数组存在的记录
-    $users = DB::table('users')->whereNotIn('id', [1,2,3,4,5])->get();
+    $users = DB::table('users')->whereNotIn('id', [1, 2, 3, 4, 5])->get();
     //查询不在指定数组存在的记录
     $users = DB::table('users')->whereNull('updated_at')->get();
     //查询值为null的记录
@@ -114,10 +114,82 @@ Route::get('where',function(){
         ['updated_at', '=', 'created_at']
     ])->get();
     //whereColumn与where类似,可以传递数组指定同时指定多个条件
-    $users = DB::table('users')->where('id',15)
-        ->orWhere(function ($query){
-            $query->where('name','like','%a%')->orWhere('name','like','%b%');
+    $users = DB::table('users')->where('id', 15)
+        ->orWhere(function ($query) {
+            $query->where('name', 'like', '%a%')->orWhere('name', 'like', '%b%');
         })->get();
     //如果需要查询id为5或者name带有a或b的记录,那么这个时候就应该把id为5以及name带有a或者b分成两个组
+    $users = DB::table('use1rs')->whereExists(function ($query) {
+        $query->from('articles')->whereRaw('articles.user_id = users.id');
+    })->toSQL();
+    //而上面这样的语句与下面这个查询语句是等价的
+    //select * from `use1rs` where exists (select * from `articles` where articles.user_id = users.id)
+    //where exists子句用来方便编写where exists子句,如果我们需要查询发过文章的用户或者没有发过文章的用户,就应该使用whereExists子句
+    //当然如果需要查询出没有发过文章的用户可以使用whereNotExists
+    dump($users);
+});
+Route::get('order',function(){
+    $users = DB::table('users')->orderBy('id','DESC')->get();
+    //对结果集排序
+    $user = DB::table('users')->inRandomOrder()->first();
+    //打乱结果集
+    $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->get();
+    /**
+     * 分组,使用laravel内置的sql语句相关方法都会给字段和表名加上相对应的''与``但是如果count(*)被自动转化成`count(*)`的话就会找不到这个字段
+     * 所以使用DB的raw就是不使用laravel去处理sql语句,而上面语句的作用就是查出文章表的每个用户的id及他们发表的文章数目
+     */
+    $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->having('article_num','<>',1)->get();
+    //不查询发表1篇文章数的用户,因为articles表本身并没有article_num字段,而是通过重命名产生的字段,所有如果过滤值为1的情况使用where是会报错的,必须
+    //使用having
+    $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->havingRaw('article_num <> 1')->get();
+    //havingRaw的作用是通过传递原生的表达式来过滤结果集
+    $users = DB::table('users')->orderBy('id','DESC')->skip(5)->take(3)->get();
+    //从第5条记录开始,取3条记录
+    $users = DB::table('users')->orderBy('id','DESC')->offset(5)->limit(3)->get();
+    //从第5条开始,取3条记录
+    dump($users);
+});
+Route::get('join',function(){
+    //内连接
+    $user_article = DB::table('users')->join('articles','users.id','=','articles.user_id')->select('users.id','articles.title')->get();
+    //左连接
+    $user_article = DB::table('users')->leftJoin('articles','users.id','=','articles.user_id')->select('users.id','articles.title')->get();
+    //交叉连接,轻易不要使用,因为数据量异常的庞大,常用的情况:比如说有学生表和课程表需要查询出学生选课的所有可能
+    $user_article = DB::table('users')->crossJoin('articles')->get();
+    //高级连接语句,带多个on条件的连接
+    $user_article = DB::table('users')->join('articles',function ($join){
+        $join->on('users.id','=','articles.user_id')->on('users.id','>',DB::raw(20));
+        //上面语句第二个on条件的第3个参数因为laravel自动添加上``符号的原因所有这边必须强行注入原生语句
+    })->select('users.id','articles.title')->get();
+    //laravel也支持以where的形式给join添加多个连接条件
+    $user_article = DB::table('users')->join('articles',function ($join){
+        $join->on('users.id','=','articles.user_id')->where('users.id','>',20);
+        //where语句没有这样的一个自动添加``符号的缘故所有不需要强行注入原生语句
+    })->select('users.id','articles.title')->get();
+    /**
+     * 以上两条命令最终生成的查询语句为
+     * select `users`.`id`, `articles`.`title` from `users` inner join `articles` on `users`.`id` = `articles`.`user_id` and `users`.`id` > ?
+     * select `users`.`id`, `articles`.`title` from `users` inner join `articles` on `users`.`id` = `articles`.`user_id` and `users`.`id` > 20
+     * 但因为一个使用了注入原生语句,所有就直接显示的值,没有了基本的防sql注入
+     */
+    dump($user_article);
+});
+Route::get('articlenum', function () {
+    //假使当前数据库有users表,articles表,部分的用户发表过文章,也就是说在articles表里有记录,我们需要查询出所有发表过文章的用户资料,以及他所发表的文章数量
+    //并且发表文章的数量不是1篇,在这个环境下,仅使用laravel的内置方法如何去查询出来
+    $users = DB::table('users')->join(DB::raw(
+        '(' . DB::table('articles')->select(DB::raw('user_id,count(*) as num'))->groupBy('user_id')->toSQL() . ') article'
+    ), 'users.id', '=', 'article.user_id')->select('users.id','users.name','article.num as article_num')
+        ->having('article_num','<>',1)
+        ->get();
+    //上面的代码与下面的是等价的
+    $users = DB::select('select `users`.`id`, `users`.`name`, `article`.`num` as `article_num` from `users` inner join (select user_id,count(*) as num from `articles` group by `user_id`) article on `users`.`id` = `article`.`user_id` having `article_num` <> 1');
+    /**
+     * 前者过于重度依赖laravel框架自身的方法,而后者感觉根本就没有发挥laravel的长处,下面是我心中相对比较优化的写法
+     */
+    $users = DB::table('users')->join(DB::raw(
+        '(select user_id,count(*) as article_num from articles group by user_id having article_num <> 1) article'
+    ), 'users.id', '=', 'article.user_id')->select('users.id','users.name','article.article_num')
+        ->get();
     dump($users);
 });

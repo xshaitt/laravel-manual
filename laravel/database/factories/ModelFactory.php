@@ -22,8 +22,18 @@ $factory->define(App\User::class, function (Faker\Generator $faker) {
     ];
 });
 $factory->define(App\Article::class, function (Faker\Generator $faker) {
-
+    $str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
     return [
-        'title'=>''
+        'user_id' => mt_rand(1, 31),
+        'title' => substr(str_shuffle($str), 0, mt_rand(5, 25)),
+        'content' => substr(str_shuffle($str), 0, mt_rand(5, 25)),
+    ];
+});
+$factory->define(App\Log::class, function (Faker\Generator $faker) {
+    $str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+    return [
+        'user_id' => mt_rand(1, 31),
+        'title' => substr(str_shuffle($str), 0, mt_rand(5, 25)),
+        'content' => substr(str_shuffle($str), 0, mt_rand(5, 25)),
     ];
 });
