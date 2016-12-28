@@ -122,15 +122,213 @@ Route::get('where',function(){
 });
 ```
 # 注入原生表达式
+在部分sql语句下,使用laravel的内置方法去创建可能并不太方便,但laravel提供了raw方法,用于局部注入原生的sql语句,比如说创建这样的一个查询:
+查询出文章表的用户id和对应发表的文章数量,我们可以这样来写
+`$article_num = DB::table('articles')->select('user_id','count(*) as article_num')->groupBy('user_id')->get();`
+如果像上面那么去创建sql语句的话,那么一定会报错的,因为它生成的sql语句是这样的,laravel会自动的为count(*)加上\`\`,但我们表里面并没有count(*)这样的字段
+```
+select `user_id`, `count(*)` as `article_num` from `articles` group by `user_id`
+```
+那么在这样的情况下,我们使用raw注入一部分的参数更方便的点
+`$article_num = DB::table('articles')->select('user_id',DB::raw('count(*) as article_num'))->groupBy('user_id')->get();`
+上面代码最终生成的sql语句是这样的
+```
+select `user_id`, count(*) as article_num from `articles` group by `user_id`
+```
 # 结果约束
 ## 1.orderBy
+使用orderBy对于结果集进行顺序或者倒序的排序
+`$users = DB::table('users')->orderBy('id', 'DESC')->get();`
 ## 2.inRandomOrder
+使用inRandomOrder可以打乱结果集，如果取一条数据的话，那么就相当于只每次查询获取不同数据
+`$user = DB::table('users')->inRandomOrder()->first();`
 ## 3.groupBy
+使用groupBy进行分组，会有去重的作用，但它是用来分组的
+`$article_num = DB::table('articles')->groupBy('user_id')->get();`
 ## 4.having
+where是产生结果集前的过滤，而having是产生结果集后的过滤，也就是说这是对于结果集过滤的方法
+`$article_num = DB::table('articles')->select('user_id',DB::raw('count(*) as article_num'))->groupBy('user_id')->get();`
+像上面的这个例子，因为article_num是通过起别名的方式来的，所以如果需要通过这个字段来过滤结果集的话，那么只能使用having了
 ## 5.havingRaw
-## 6.skip&amp;take
-# 子查询
-# join
+加raw的基本都是表达使用原生表达式的值
+`$article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->havingRaw('article_num <> 1')->get();`
+## 6.skip&amp;take与offset&amp;limit
+限制结果集数量
+```
+$users = DB::table('users')->orderBy('id', 'DESC')->skip(5)->take(3)->get();
+//从第5条记录开始,取3条记录
+$users = DB::table('users')->orderBy('id', 'DESC')->offset(5)->limit(3)->get();
+//从第5条开始,取3条记录
+```
+## 7.代码片段
+```
+Route::get('order', function () {
+    $users = DB::table('users')->orderBy('id', 'DESC')->get();
+    //对结果集排序
+    $user = DB::table('users')->inRandomOrder()->first();
+    //打乱结果集
+    $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->get();
+    /**
+     * 分组,使用laravel内置的sql语句相关方法都会给字段和表名加上相对应的''与``但是如果count(*)被自动转化成`count(*)`的话就会找不到这个字段
+     * 所以使用DB的raw就是不使用laravel去处理sql语句,而上面语句的作用就是查出文章表的每个用户的id及他们发表的文章数目
+     */
+    $article_num = DB::table('articles')->select('user_id',DB::raw('count(*) as article_num'))->groupBy('user_id')->get();
+    //不查询发表1篇文章数的用户,因为articles表本身并没有article_num字段,而是通过重命名产生的字段,所有如果过滤值为1的情况使用where是会报错的,必须
+    //使用having
+    $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->havingRaw('article_num <> 1')->get();
+    //havingRaw的作用是通过传递原生的表达式来过滤结果集
+    $users = DB::table('users')->orderBy('id', 'DESC')->skip(5)->take(3)->get();
+    //从第5条记录开始,取3条记录
+    $users = DB::table('users')->orderBy('id', 'DESC')->offset(5)->limit(3)->get();
+    //从第5条开始,取3条记录
+    dump($article_num);
+});
+```
+# 条件子句
+有的时候我们需要根据条件的判断来执行两个不同的sql，那么laravel为我们提供了一个when方法
+
+```php
+<?php
+Route::get('when',function(){
+    $bool = false;
+    $user = DB::table('users')->when($bool,function($query){
+        return $query->orderBy('id','ASC')->first();
+    },function($query){
+        return $query->orderBy('id','DESC')->first();
+    });
+    dd($user);
+});
+```
+使用when方法，第一个参数提供一个布尔值，第二三两个参数都是闭包方法，根据这个布尔值，如果为真则执行第二个参数，否则不执行，如果为假时需要返回别一个sql的话，则可以通过第三个参数来实现
+# 多表连接
+## 1.内连接
+join
+`user_article = DB::table('users')->join('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();`
+## 2.左连接
+leftJoin
+`$user_article = DB::table('users')->leftJoin('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();`
+## 3.交叉连接
+所谓交叉就是求出两个表互相的所有可能，比如说：A是学生表，c是课程表，求出学生所有可能的选课情况
+`$user_article = DB::table('users')->crossJoin('articles')->get();`
+交叉连接,轻易不要使用,因为数据量异常的庞大
+## 4.多条件连接
+通过闭包的方式可以为连接设置多个条件
+```php
+<?php
+$user_article = DB::table('users')->join('articles', function ($join) {
+        $join->on('users.id', '=', 'articles.user_id')->where('users.id', '>', 20);
+    })->select('users.id', 'articles.title')->get();
+```
+## 5.代码段
+```php
+<?php
+Route::get('join', function () {
+    //内连接
+    $user_article = DB::table('users')->join('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();
+    //左连接
+    $user_article = DB::table('users')->leftJoin('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();
+    //交叉连接,轻易不要使用,因为数据量异常的庞大,常用的情况:比如说有学生表和课程表需要查询出学生选课的所有可能
+    $user_article = DB::table('users')->crossJoin('articles')->get();
+    //高级连接语句,带多个on条件的连接
+    $user_article = DB::table('users')->join('articles', function ($join) {
+        $join->on('users.id', '=', 'articles.user_id')->on('users.id', '>', DB::raw(20));
+        //上面语句第二个on条件的第3个参数因为laravel自动添加上``符号的原因所有这边必须强行注入原生语句
+    })->select('users.id', 'articles.title')->get();
+    //laravel也支持以where的形式给join添加多个连接条件
+    $user_article = DB::table('users')->join('articles', function ($join) {
+        $join->on('users.id', '=', 'articles.user_id')->where('users.id', '>', 20);
+        //where语句没有这样的一个自动添加``符号的缘故所有不需要强行注入原生语句
+    })->select('users.id', 'articles.title')->get();
+    /**
+     * 以上两条命令最终生成的查询语句为
+     * select `users`.`id`, `articles`.`title` from `users` inner join `articles` on `users`.`id` = `articles`.`user_id` and `users`.`id` > ?
+     * select `users`.`id`, `articles`.`title` from `users` inner join `articles` on `users`.`id` = `articles`.`user_id` and `users`.`id` > 20
+     * 但因为一个使用了注入原生语句,所有就直接显示的值,没有了基本的防sql注入
+     */
+    dump($user_article);
+});
+```
 # 增,删,改
-# 琐
-# 总结&amp;注意
+## 1.插入1条数据
+使用insert方法插入数据,需要提供一个数组参数，数组的每个元素就是对应要插入的值
+`$user = DB::table('users')->insert(['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial.com','password'=>'lasdjfasldfjoewlalsdf']);`
+## 2.插入多条数据
+如果insert方法提供的参数是一个多维数据的话，那么就会插入多条数据
+```php
+<?php
+$user = DB::table('users')->insert([
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial1.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial2.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial3.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial4.com','password'=>'lasdjfasldfjoewlalsdf']
+    ]);
+```
+## 3.删除数据
+使用delete方法删除记录，请一定谨记where条件的正确，否则对于数据库将是一场灭顶之灾，delete方法返回的是删除的行数
+`$result = DB::table('logs')->where('id','20')->delete();`
+## 4.清空整张表
+当确实需要清空整张表的时候，我们可以使用`truncate`方法，它除了把表中所有的数据清除之外还会把di重置为1，这是一个非常危险的方法，一定要慎用
+`$result = DB::table('users')->truncate();`
+## 5.代码段
+```php
+<?
+Route::get('dml', function () {
+    //使用insert方法插入数据,插入单条数据,注意该方法返回的是,因为email字段有唯一索引,所有我在这里加了取随机值
+//    $user = DB::table('users')->insert(['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial.com','password'=>'lasdjfasldfjoewlalsdf']);
+    //同意插入多条数据
+    /*$user = DB::table('users')->insert([
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial1.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial2.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial3.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial4.com','password'=>'lasdjfasldfjoewlalsdf']
+    ]);*/
+    //使用update方法更新数据,返回更新了多少行
+//    $user = DB::table('users')->where('id',1)->update(['name'=>'first shuai']);
+    //laravel甚至还集成对于数字型数据的增减,第二个参数为增减的值,默认为1
+//    $result = DB::table('logs')->increment('see',1);
+//    $result = DB::table('logs')->decrement('see');
+    //使用delete方法删除数据,返回删除了多少行,注意一定要保证where语句没有问题,否则就是清表了
+//    $result = DB::table('logs')->where('id','20')->delete();
+    //清除整张表
+//    $result = DB::table('users')->truncate();
+//    dump($result);
+});
+```
+# 锁
+## 1.共享锁
+如果在当前事务启用针对于表或者行启用了共享锁的话，那么任何事务都可以对于此表或者此行进行读取，同样的，任何事务对于此行或者此表都不能进行删除或者修改.锁的目的就是为了保证上锁的对象在事务执行期间数据的一致性，而共享锁的作用就是保证了它在事务执行期间任何读取的操作其结果都一致
+```php
+<?php
+DB::beginTransaction();
+$user = DB::table('users')->where('id', 20)->sharedLock()->get();
+$result = DB::table('users')->where('id', 20)->update(['name' => '1234']);
+dump($result);
+```
+因为事务最终没有进行提交所有当前的修改不会生效
+## 2.排他锁
+同样的，排他锁的目的就是保证了数据的完整性，只有加锁的事务才能对于数据进行操作
+```php
+<?php
+DB::beginTransaction();
+$user = DB::table('users')->where('id', 20)->lockForUpdate()->get();
+```
+验证代码是否正确只能通过多条事务来验证，所以在这边我就不做多余的操作了
+## 3.代码段
+```php
+<?php
+Route::get('suo', function () {
+    //共享锁
+//    DB::beginTransaction();
+//    $user = DB::table('users')->where('id', 20)->sharedLock()->get();
+    /**
+     * 因为上面已经使用共享锁把id为20的行锁定了,所以在当前事务里任何针对于此行的修改语句都会执行失败
+     * 在此事务之中因为加入了共享锁,所有在提交当前事务之前,所有的修改或者影响到id为20记录的都会执行失败
+     * 如果不加共享锁的话,那么虽然说sql语句是可以正常的操作修改,并且也返回最后修改的行数,但是因为这个事务没有提交,最后也不会生效的
+     */
+//    $result = DB::table('users')->where('id', 20)->update(['name' => '1234']);
+//    dump($result);
+    //排他锁
+    DB::beginTransaction();
+    $user = DB::table('users')->where('id', 20)->lockForUpdate()->get();
+});
+```

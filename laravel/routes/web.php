@@ -128,8 +128,8 @@ Route::get('where', function () {
     //当然如果需要查询出没有发过文章的用户可以使用whereNotExists
     dump($users);
 });
-Route::get('order',function(){
-    $users = DB::table('users')->orderBy('id','DESC')->get();
+Route::get('order', function () {
+    $users = DB::table('users')->orderBy('id', 'DESC')->get();
     //对结果集排序
     $user = DB::table('users')->inRandomOrder()->first();
     //打乱结果集
@@ -138,34 +138,34 @@ Route::get('order',function(){
      * 分组,使用laravel内置的sql语句相关方法都会给字段和表名加上相对应的''与``但是如果count(*)被自动转化成`count(*)`的话就会找不到这个字段
      * 所以使用DB的raw就是不使用laravel去处理sql语句,而上面语句的作用就是查出文章表的每个用户的id及他们发表的文章数目
      */
-    $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->having('article_num','<>',1)->get();
+    $article_num = DB::table('articles')->select('user_id',DB::raw('count(*) as article_num'))->groupBy('user_id')->get();
     //不查询发表1篇文章数的用户,因为articles表本身并没有article_num字段,而是通过重命名产生的字段,所有如果过滤值为1的情况使用where是会报错的,必须
     //使用having
     $article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->havingRaw('article_num <> 1')->get();
     //havingRaw的作用是通过传递原生的表达式来过滤结果集
-    $users = DB::table('users')->orderBy('id','DESC')->skip(5)->take(3)->get();
+    $users = DB::table('users')->orderBy('id', 'DESC')->skip(5)->take(3)->get();
     //从第5条记录开始,取3条记录
-    $users = DB::table('users')->orderBy('id','DESC')->offset(5)->limit(3)->get();
+    $users = DB::table('users')->orderBy('id', 'DESC')->offset(5)->limit(3)->get();
     //从第5条开始,取3条记录
-    dump($users);
+    dump($article_num);
 });
-Route::get('join',function(){
+Route::get('join', function () {
     //内连接
-    $user_article = DB::table('users')->join('articles','users.id','=','articles.user_id')->select('users.id','articles.title')->get();
+    $user_article = DB::table('users')->join('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();
     //左连接
-    $user_article = DB::table('users')->leftJoin('articles','users.id','=','articles.user_id')->select('users.id','articles.title')->get();
+    $user_article = DB::table('users')->leftJoin('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();
     //交叉连接,轻易不要使用,因为数据量异常的庞大,常用的情况:比如说有学生表和课程表需要查询出学生选课的所有可能
     $user_article = DB::table('users')->crossJoin('articles')->get();
     //高级连接语句,带多个on条件的连接
-    $user_article = DB::table('users')->join('articles',function ($join){
-        $join->on('users.id','=','articles.user_id')->on('users.id','>',DB::raw(20));
+    $user_article = DB::table('users')->join('articles', function ($join) {
+        $join->on('users.id', '=', 'articles.user_id')->on('users.id', '>', DB::raw(20));
         //上面语句第二个on条件的第3个参数因为laravel自动添加上``符号的原因所有这边必须强行注入原生语句
-    })->select('users.id','articles.title')->get();
+    })->select('users.id', 'articles.title')->get();
     //laravel也支持以where的形式给join添加多个连接条件
-    $user_article = DB::table('users')->join('articles',function ($join){
-        $join->on('users.id','=','articles.user_id')->where('users.id','>',20);
+    $user_article = DB::table('users')->join('articles', function ($join) {
+        $join->on('users.id', '=', 'articles.user_id')->where('users.id', '>', 20);
         //where语句没有这样的一个自动添加``符号的缘故所有不需要强行注入原生语句
-    })->select('users.id','articles.title')->get();
+    })->select('users.id', 'articles.title')->get();
     /**
      * 以上两条命令最终生成的查询语句为
      * select `users`.`id`, `articles`.`title` from `users` inner join `articles` on `users`.`id` = `articles`.`user_id` and `users`.`id` > ?
@@ -179,8 +179,8 @@ Route::get('articlenum', function () {
     //并且发表文章的数量不是1篇,在这个环境下,仅使用laravel的内置方法如何去查询出来
     $users = DB::table('users')->join(DB::raw(
         '(' . DB::table('articles')->select(DB::raw('user_id,count(*) as num'))->groupBy('user_id')->toSQL() . ') article'
-    ), 'users.id', '=', 'article.user_id')->select('users.id','users.name','article.num as article_num')
-        ->having('article_num','<>',1)
+    ), 'users.id', '=', 'article.user_id')->select('users.id', 'users.name', 'article.num as article_num')
+        ->having('article_num', '<>', 1)
         ->get();
     //上面的代码与下面的是等价的
     $users = DB::select('select `users`.`id`, `users`.`name`, `article`.`num` as `article_num` from `users` inner join (select user_id,count(*) as num from `articles` group by `user_id`) article on `users`.`id` = `article`.`user_id` having `article_num` <> 1');
@@ -189,7 +189,57 @@ Route::get('articlenum', function () {
      */
     $users = DB::table('users')->join(DB::raw(
         '(select user_id,count(*) as article_num from articles group by user_id having article_num <> 1) article'
-    ), 'users.id', '=', 'article.user_id')->select('users.id','users.name','article.article_num')
-        ->get();
+    ), 'users.id', '=', 'article.user_id')->select('users.id', 'users.name', 'article.article_num')
+        ->toSql();
     dump($users);
+});
+Route::get('dml', function () {
+    //使用insert方法插入数据,插入单条数据,注意该方法返回的是,因为email字段有唯一索引,所有我在这里加了取随机值
+//    $user = DB::table('users')->insert(['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial.com','password'=>'lasdjfasldfjoewlalsdf']);
+    //同意插入多条数据
+    /*$user = DB::table('users')->insert([
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial1.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial2.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial3.com','password'=>'lasdjfasldfjoewlalsdf'],
+        ['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial4.com','password'=>'lasdjfasldfjoewlalsdf']
+    ]);*/
+    //使用update方法更新数据,返回更新了多少行
+//    $user = DB::table('users')->where('id',1)->update(['name'=>'first shuai']);
+    //laravel甚至还集成对于数字型数据的增减,第二个参数为增减的值,默认为1
+//    $result = DB::table('logs')->increment('see',1);
+//    $result = DB::table('logs')->decrement('see');
+    //使用delete方法删除数据,返回删除了多少行,注意一定要保证where语句没有问题,否则就是清表了
+//    $result = DB::table('logs')->where('id','20')->delete();
+    //清除整张表
+//    $result = DB::table('users')->truncate();
+//    dump($result);
+});
+Route::get('suo', function () {
+    //共享锁
+//    DB::beginTransaction();
+//    $user = DB::table('users')->where('id', 20)->sharedLock()->get();
+    /**
+     * 因为上面已经使用共享锁把id为20的行锁定了,所以在当前事务里任何针对于此行的修改语句都会执行失败
+     * 在此事务之中因为加入了共享锁,所有在提交当前事务之前,所有的修改或者影响到id为20记录的都会执行失败
+     * 如果不加共享锁的话,那么虽然说sql语句是可以正常的操作修改,并且也返回最后修改的行数,但是因为这个事务没有提交,最后也不会生效的
+     */
+//    $result = DB::table('users')->where('id', 20)->update(['name' => '1234']);
+//    dump($result);
+    //排他锁
+    DB::beginTransaction();
+    $user = DB::table('users')->where('id', 20)->lockForUpdate()->get();
+    /**
+     * 使用排他锁的话,那么在当前事务就可以修改id为20的记录,但是因为最后事务没有提交,虽然sql返回了修改的行数但是最终数据也并没有修改
+     */
+    $result = DB::table('users')->where('id', 20)->first();
+    dump($result);
+});
+Route::get('when',function(){
+    $bool = false;
+    $user = DB::table('users')->when($bool,function($query){
+        return $query->orderBy('id','ASC')->first();
+    },function($query){
+        return $query->orderBy('id','DESC')->first();
+    });
+    dd($user);
 });
