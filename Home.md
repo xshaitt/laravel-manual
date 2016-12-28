@@ -11,7 +11,8 @@ laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发
 [运行原生SQL语句](https://github.com/xshaitt/laravel-manual/wiki/%E4%BD%BF%E7%94%A8DB%E6%89%A7%E8%A1%8C%E5%8E%9F%E7%94%9FSQL)
 
 [使用DB的方法](https://github.com/xshaitt/laravel-manual/wiki/使用DB的方法)
-### 事务
+
+[laravel中的事务](https://github.com/xshaitt/laravel-manual/wiki/laravel中的事务)
 ## Eloquent
 ### 创建及配置Model
 ### 使用Model增删改查
