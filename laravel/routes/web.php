@@ -31,3 +31,19 @@ Route::get('findor',function(){
     $user = App\User::findOrFail(0);
     dd($user);
 });
+Route::get('save',function(){
+//    $user = new App\User();
+//    $user->name = 'xsh';
+//    $user->email = 'xsh@gmail.com';
+//    $user->password = '123456';
+//    $user->save();
+//    dd($user);
+    $user = App\User::find(20);
+    $user->name = 'first shuai';
+    $user->save();
+    dd($user);
+});
+Route::get('create',function(){
+    $user = App\User::create(['name'=>'xsh','email'=>'qwer@gmail.com','password'=>'123456']);
+    dd($user);
+});

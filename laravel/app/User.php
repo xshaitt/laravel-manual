@@ -16,4 +16,8 @@ class User extends Model
     public $dateFormat = 'Y-m-d';
     //使用$connection属性指定当前model使用的数据库连接，前提是在config/database.php文件里配置过相对应的连接，默认使用mysql
     public $connection = 'mysql';
+    //白名单
+    public $fillable = ['name','email','password'];
+    //黑名单
+//    public $guarded = ['updated_at','created_at','remember_token'];
 }

@@ -16,7 +16,7 @@ laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发
 ## Eloquent
 ### [1.模型](https://github.com/xshaitt/laravel-manual/wiki/eloquent模型)
 ### [2.获取模型](https://github.com/xshaitt/laravel-manual/wiki/eloquent获取模型)
-### 3.插入与更新模型
+### [3.插入与更新模型](https://github.com/xshaitt/laravel-manual/wiki/插入与更新模型)
 ### 4.删除模型
 ### 5.查询作用域
 ### 6.事件
