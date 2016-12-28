@@ -14,10 +14,13 @@ laravel-manual诞生于2016年12月中，他是一个旨在帮助广大php开发
 
 [laravel中的事务](https://github.com/xshaitt/laravel-manual/wiki/laravel中的事务)
 ## Eloquent
-### 创建及配置Model
-### 使用Model增删改查
-### 多表关联
-### 访问器修改器
+### [1.模型](https://github.com/xshaitt/laravel-manual/wiki/eloquent模型)
+### 2.获取模型
+### 3.插入与更新模型
+### 4.删除模型
+### 5.查询作用域
+### 6.事件
+
 # 使用laravel写一个用户模块
 # 广播
 # 缓存

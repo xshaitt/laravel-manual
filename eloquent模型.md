@@ -1,3 +1,33 @@
+# Eloquent模型
+## 1.简介
+Eloquent是laravel框架提供的一种orm技术，通过调用一些简单的方法来完成一些相对复杂的操作，每张表都会对应一个模型，
+我们可以调用这个模型的方法来完成增，删，改，查的操作。而每个模型其实都相当于一个查询构建器，所有对于在db中可以使用的方法，
+在Eloquent模型当中也同样可以使用。
+## 2.创建模型
+除了手动创建以外，通过我们可以使用artisan命令来创建：
+
+`php artisan make:model User`
+
+该命令会在当前项目的app目录下面创建一个User.php文件，并且继承model类，文件内的代码如下：
+```php
+<?php
+
+namespace App;
+
+use Illuminate\Database\Eloquent\Model;
+
+class User extends Model
+{
+    //
+}
+
+```
+如果为`make:model`带上-m或者--migration选项的话，那么则在创建model类的同时也会创建一个migration，
+关于migration的介绍，我另有章节细说。
+
+`php artisan make:model -m User`
+## 3.常用属性
+```php
 <?php
 
 namespace App;
@@ -17,3 +47,5 @@ class User extends Model
     //使用$connection属性指定当前model使用的数据库连接，前提是在config/database.php文件里配置过相对应的连接，默认使用mysql
     public $connection = 'mysql';
 }
+
+```
