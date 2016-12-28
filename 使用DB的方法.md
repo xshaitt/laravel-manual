@@ -4,15 +4,19 @@ laravel为我们查询和操作数据库提供了一套流接口,其使用PDO的
 
 ## 1. table&amp;get
 table方法用于指定查询条件的数据表,而get用于获取所有符合条件的记录
+
 `$users = DB::table('users')->get();`
 ## 2. first
 只获取第一行的数据
+
 `$user = DB::table('users')->first();`
 ## 3. value
 只获取第一行的指定列数据,注意必须要指定需要获取到的类
+
 `$name = DB::table('users')->value('name');`
 ## 4. pluck
 获取符合条件的列数据,注意必须要指定需要获取到的列
+
 `$names = DB::table('users')->pluck('name');`
 ## 5. chunk
 chunk的作用是分块的去获取数据,每次仅获取指定个数的记录。通常在处理比较大的数据量的时候,我们会用到那chunk,举个例子:如果现在我们的数据库已经存在百万级的用户
@@ -27,12 +31,15 @@ DB::table('users')->chunk(5, function ($users) {
 ```
 ## 6. select
 只获取指定列的数据
+
 `$users = DB::table('users')->select('name','email')->get();`
 ## 7. distinct
 过滤掉重复的数据
+
 `$users = DB::table('users')->select('name','email')->distinct()->get();`
-## 7. 聚合函数
-```
+## 8. 聚合函数
+```php
+<?php
 Route::get('db', function () {
     $users = DB::table('users')->get();
     //table方法指定一个特定的数据表
@@ -61,7 +68,8 @@ Route::get('db', function () {
 laravel的where语句最基本的调用方式需要传递三个参数,第一个参数是列名,第二个参数是数据库支持的操作符,而第三个参数是参与比较的值。如果第二个参数是=的话,那么
 默认可以省略,只传递两个参数,一个参与比较的列,一个参与比较的值.
 下面的这段代码对于where众多的使用方式有比较详细的
-```
+```php
+<?php
 //where
 Route::get('where',function(){
     $user = DB::table('users')->where('id','=','15')->first();
@@ -124,37 +132,47 @@ Route::get('where',function(){
 # 注入原生表达式
 在部分sql语句下,使用laravel的内置方法去创建可能并不太方便,但laravel提供了raw方法,用于局部注入原生的sql语句,比如说创建这样的一个查询:
 查询出文章表的用户id和对应发表的文章数量,我们可以这样来写
+
 `$article_num = DB::table('articles')->select('user_id','count(*) as article_num')->groupBy('user_id')->get();`
+
 如果像上面那么去创建sql语句的话,那么一定会报错的,因为它生成的sql语句是这样的,laravel会自动的为count(*)加上\`\`,但我们表里面并没有count(*)这样的字段
-```
+```sql
 select `user_id`, `count(*)` as `article_num` from `articles` group by `user_id`
 ```
 那么在这样的情况下,我们使用raw注入一部分的参数更方便的点
+
 `$article_num = DB::table('articles')->select('user_id',DB::raw('count(*) as article_num'))->groupBy('user_id')->get();`
 上面代码最终生成的sql语句是这样的
-```
+```sql
 select `user_id`, count(*) as article_num from `articles` group by `user_id`
 ```
 # 结果约束
 ## 1.orderBy
 使用orderBy对于结果集进行顺序或者倒序的排序
+
 `$users = DB::table('users')->orderBy('id', 'DESC')->get();`
 ## 2.inRandomOrder
 使用inRandomOrder可以打乱结果集，如果取一条数据的话，那么就相当于只每次查询获取不同数据
+
 `$user = DB::table('users')->inRandomOrder()->first();`
 ## 3.groupBy
 使用groupBy进行分组，会有去重的作用，但它是用来分组的
+
 `$article_num = DB::table('articles')->groupBy('user_id')->get();`
 ## 4.having
 where是产生结果集前的过滤，而having是产生结果集后的过滤，也就是说这是对于结果集过滤的方法
+
 `$article_num = DB::table('articles')->select('user_id',DB::raw('count(*) as article_num'))->groupBy('user_id')->get();`
+
 像上面的这个例子，因为article_num是通过起别名的方式来的，所以如果需要通过这个字段来过滤结果集的话，那么只能使用having了
 ## 5.havingRaw
 加raw的基本都是表达使用原生表达式的值
+
 `$article_num = DB::table('articles')->select(DB::raw('user_id,count(*) as article_num'))->groupBy('user_id')->havingRaw('article_num <> 1')->get();`
 ## 6.skip&amp;take与offset&amp;limit
 限制结果集数量
-```
+```php
+<?php
 $users = DB::table('users')->orderBy('id', 'DESC')->skip(5)->take(3)->get();
 //从第5条记录开始,取3条记录
 $users = DB::table('users')->orderBy('id', 'DESC')->offset(5)->limit(3)->get();
@@ -203,13 +221,17 @@ Route::get('when',function(){
 # 多表连接
 ## 1.内连接
 join
+
 `user_article = DB::table('users')->join('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();`
 ## 2.左连接
 leftJoin
+
 `$user_article = DB::table('users')->leftJoin('articles', 'users.id', '=', 'articles.user_id')->select('users.id', 'articles.title')->get();`
 ## 3.交叉连接
 所谓交叉就是求出两个表互相的所有可能，比如说：A是学生表，c是课程表，求出学生所有可能的选课情况
+
 `$user_article = DB::table('users')->crossJoin('articles')->get();`
+
 交叉连接,轻易不要使用,因为数据量异常的庞大
 ## 4.多条件连接
 通过闭包的方式可以为连接设置多个条件
@@ -251,6 +273,7 @@ Route::get('join', function () {
 # 增,删,改
 ## 1.插入1条数据
 使用insert方法插入数据,需要提供一个数组参数，数组的每个元素就是对应要插入的值
+
 `$user = DB::table('users')->insert(['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial.com','password'=>'lasdjfasldfjoewlalsdf']);`
 ## 2.插入多条数据
 如果insert方法提供的参数是一个多维数据的话，那么就会插入多条数据
@@ -265,13 +288,15 @@ $user = DB::table('users')->insert([
 ```
 ## 3.删除数据
 使用delete方法删除记录，请一定谨记where条件的正确，否则对于数据库将是一场灭顶之灾，delete方法返回的是删除的行数
+
 `$result = DB::table('logs')->where('id','20')->delete();`
 ## 4.清空整张表
 当确实需要清空整张表的时候，我们可以使用`truncate`方法，它除了把表中所有的数据清除之外还会把di重置为1，这是一个非常危险的方法，一定要慎用
+
 `$result = DB::table('users')->truncate();`
 ## 5.代码段
 ```php
-<?
+<?php
 Route::get('dml', function () {
     //使用insert方法插入数据,插入单条数据,注意该方法返回的是,因为email字段有唯一索引,所有我在这里加了取随机值
 //    $user = DB::table('users')->insert(['name'=>'xshaitt','email'=>time().mt_rand(5,15).'@gmial.com','password'=>'lasdjfasldfjoewlalsdf']);
